@@ -1,27 +1,27 @@
 #!/bin/bash
 
 
-# Script zum erstellen eines verschluesselten Kali-Sticks
+# Bash-Script to create an encrypted Kali-Live-USB-Stick
 
 IMAGE=$1
 
 DEV=$2
 
 
-#Skript Startet nur, wenn zwei Argumente uebergeben wurden und die Pfade existieren
+# Conditions to execute the script, are valid arguments
 if [ $# -gt 0 ] && [ $# -lt 3 ] && [ -e $1 ] && [ -e $2 ]; then 
 
 	sudo dd if=$IMAGE of=$DEV bs=1M status=progress
 	sync
 	
-	#Groeße des Images wird gelesen und in "bytes" geschrieben
+	#Size of the image are stored in "bytes"
 	read bytes _ < <(du -bcm $IMAGE |tail -1); echo $bytes
 	
-	#Erstellen der Persistenten-Partition über die verbleibende Groeße des Sticks
+	#Creates the persistance over the entire size of the USB-Stick
 	sudo parted $DEV mkpart primary $bytes 100%
 	sync
 
-	#Anlegen der Verschluesselung inkl. PW
+	#Creates the encrypted patition
 	sudo cryptsetup --verbose --verify-passphrase luksFormat ${DEV}3
 	sudo cryptsetup luksOpen ${DEV}3 my_usb
 	sudo mkfs.ext3 -L persistence /dev/mapper/my_usb
@@ -29,7 +29,7 @@ if [ $# -gt 0 ] && [ $# -lt 3 ] && [ -e $1 ] && [ -e $2 ]; then
 	sudo mkdir -p /mnt/my_usb
 	sudo mount /dev/mapper/my_usb /mnt/my_usb
 	
-	#Flag-File zum einbinden als Persistenz	
+	#Flag-File for the persistance	
 	echo '/ union' | sudo tee --append /mnt/my_usb/persistence.conf
 	
 
